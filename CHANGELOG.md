@@ -1,26 +1,3 @@
-## 3.0.3
-* upgrade compileSdkVersion
-## 3.0.2
-* add storage compatibility mode for AndroidQ.
-* fix [#106](https://github.com/crazecoder/open_file/issues/106) [#100](https://github.com/crazecoder/open_file/issues/100) [#74](https://github.com/crazecoder/open_file/issues/74)
-* fix multiple file providers. (thanks to [@jawa0919](https://github.com/jawa0919))
-* Take file extension in lowercase for comparison.(thanks to [@kluverua](https://github.com/kluverua))
-* Fixed a typo in the error message for fileNotFound.(thanks to [@sebas642](https://github.com/sebas642))
-## 3.0.1
-* fix web parameter error
-* Replace result value from String to OpenResult.
-## 3.0.0
-* updated to the v2 Android Plugin APIs
-* Distinguish android errors (No APP found and others)
-* add web support
-* add pc support
-## 2.1.1
-* rollback 2.0.3
-## 2.1.0-pre.1
-* add web support(beta)
-* add pc support(beta)
-## 2.0.3
-* change use FileProvider from Android M to Android N
 ## 2.0.2
 * catch No Activity found to handle Intent exception
 * Optimize request REQUEST_INSTALL_PACKAGES permission on Android O

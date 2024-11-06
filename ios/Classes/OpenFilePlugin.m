@@ -38,7 +38,7 @@ static NSString *const CHANNEL_NAME = @"open_file";
         BOOL fileExist=[fileManager fileExistsAtPath:msg];
         if(fileExist){
             //            NSURL *resourceToOpen = [NSURL fileURLWithPath:msg];
-            NSString *exestr = [[msg pathExtension] lowercaseString];
+            NSString *exestr = [msg pathExtension];
             _documentController = [UIDocumentInteractionController interactionControllerWithURL:[NSURL fileURLWithPath:msg]];
             _documentController.delegate = self;
             NSString *uti = call.arguments[@"uti"];
@@ -106,23 +106,13 @@ static NSString *const CHANNEL_NAME = @"open_file";
                     NSLog(@"%@", exestr);
                 }
             }
-            @try {
-                BOOL previewSucceeded = [_documentController presentPreviewAnimated:YES];
-                if(!previewSucceeded){
-                    [_documentController presentOpenInMenuFromRect:CGRectMake(500,20,100,100) inView:_viewController.view animated:YES];
-                }
-            }@catch (NSException *exception) {
-                NSDictionary * dict = @{@"message":@"File opened incorrectly。", @"type":@-4};
-                NSData * jsonData = [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:nil];
-                NSString * json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-                result(json);
+            BOOL previewSucceeded = [_documentController presentPreviewAnimated:YES];
+            if(!previewSucceeded){
+                [_documentController presentOpenInMenuFromRect:CGRectMake(500,20,100,100) inView:_viewController.view animated:YES];
             }
+            
         }else{
-            NSDictionary * dict = @{@"message":@"the file does not exist", @"type":@-2};
-            NSData * jsonData = [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:nil];
-            NSString * json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-
-            result(json);
+            result(@"the file is not exist");
         }
     } else {
         result(FlutterMethodNotImplemented);
@@ -130,19 +120,7 @@ static NSString *const CHANNEL_NAME = @"open_file";
 }
 
 - (void)documentInteractionControllerDidEndPreview:(UIDocumentInteractionController *)controller {
-    NSDictionary * dict = @{@"message":@"done", @"type":@0};
-    NSData * jsonData = [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:nil];
-    NSString * json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-
-    _result(json);
-}
-
-- (void)documentInteractionControllerDidDismissOpenInMenu:(UIDocumentInteractionController *)controller {
-      NSDictionary * dict = @{@"message":@"done", @"type":@0};
-      NSData * jsonData = [NSJSONSerialization dataWithJSONObject:dict options:NSJSONWritingPrettyPrinted error:nil];
-      NSString * json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-
-      _result(json);
+    _result(@"done");
 }
 
 - (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)controller {
