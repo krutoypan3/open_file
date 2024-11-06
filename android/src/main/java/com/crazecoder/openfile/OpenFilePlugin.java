@@ -3,18 +3,28 @@ package com.crazecoder.openfile;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.webkit.MimeTypeMap;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
 
+import com.crazecoder.openfile.utils.JsonUtil;
+import com.crazecoder.openfile.utils.MapUtil;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -24,19 +34,27 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 
 /**
  * OpenFilePlugin
  */
 public class OpenFilePlugin implements MethodCallHandler
+        , FlutterPlugin
+        , ActivityAware
         , PluginRegistry.RequestPermissionsResultListener
         , PluginRegistry.ActivityResultListener {
     /**
      * Plugin registration.
      */
+    private @Nullable
+    FlutterPluginBinding flutterPluginBinding;
+
     private Context context;
     private Activity activity;
+    private MethodChannel channel;
+
 
     private Result result;
     private String filePath;
@@ -48,15 +66,12 @@ public class OpenFilePlugin implements MethodCallHandler
     private static final int RESULT_CODE = 0x12;
     private static final String TYPE_STRING_APK = "application/vnd.android.package-archive";
 
-    private OpenFilePlugin(Context context, Activity activity) {
-        this.context = context;
-        this.activity = activity;
-    }
-
     public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "open_file");
-        OpenFilePlugin plugin = new OpenFilePlugin(registrar.context(), registrar.activity());
-        channel.setMethodCallHandler(plugin);
+        OpenFilePlugin plugin = new OpenFilePlugin();
+        plugin.activity = registrar.activity();
+        plugin.context = registrar.context();
+        plugin.channel = new MethodChannel(registrar.messenger(), "open_file");
+        plugin.channel.setMethodCallHandler(plugin);
         registrar.addRequestPermissionsResultListener(plugin);
         registrar.addActivityResultListener(plugin);
     }
@@ -68,7 +83,7 @@ public class OpenFilePlugin implements MethodCallHandler
 
     @Override
     @SuppressLint("NewApi")
-    public void onMethodCall(MethodCall call, Result result) {
+    public void onMethodCall(MethodCall call, @NonNull Result result) {
         isResultSubmitted = false;
         if (call.method.equals("open_file")) {
             filePath = call.argument("file_path");
@@ -87,7 +102,8 @@ public class OpenFilePlugin implements MethodCallHandler
                     }
                     startActivity();
                 } else {
-                    ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE);
+					ActivityCompat.requestPermissions(activity,
+                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE);
                 }
             } else {
                 startActivity();
@@ -106,25 +122,25 @@ public class OpenFilePlugin implements MethodCallHandler
         try {
             String appDirCanonicalPath = new File(context.getApplicationInfo().dataDir).getCanonicalPath();
             String fileCanonicalPath = new File(filePath).getCanonicalPath();
-            return !fileCanonicalPath.startsWith(appDirCanonicalPath);
+            String extCanonicalPath = context.getExternalFilesDir(null).getCanonicalPath();
+            return !(fileCanonicalPath.startsWith(appDirCanonicalPath) || fileCanonicalPath.startsWith(extCanonicalPath));
         } catch (IOException e) {
             e.printStackTrace();
             return true;
         }
     }
 
-
     private void startActivity() {
         File file = new File(filePath);
         if (!file.exists()) {
-            result("the " + filePath + " file is not exists");
+            result(-2, "the " + filePath + " file is not exists");
             return;
         }
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.addCategory("android.intent.category.DEFAULT");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             String packageName = context.getPackageName();
             Uri uri = FileProvider.getUriForFile(context, packageName + ".fileProvider", new File(filePath));
@@ -132,153 +148,28 @@ public class OpenFilePlugin implements MethodCallHandler
         } else {
             intent.setDataAndType(Uri.fromFile(file), typeString);
         }
+        int type = 0;
+        String message = "done";
         try {
             activity.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            type = -1;
+            message = "No APP found to open this file。";
         } catch (Exception e) {
-            result("No APP found to open this file。");
-            return;
+            type = -4;
+            message = "File opened incorrectly。";
         }
-        result("done");
+        result(type, message);
     }
 
-
     private String getFileType(String filePath) {
-        String[] fileStrs = filePath.split("\\.");
-        String fileTypeStr = fileStrs[fileStrs.length - 1];
-        switch (fileTypeStr) {
-            case "3gp":
-                return "video/3gpp";
-            case "apk":
-                return TYPE_STRING_APK;
-            case "asf":
-                return "video/x-ms-asf";
-            case "avi":
-                return "video/x-msvideo";
-            case "bin":
-                return "application/octet-stream";
-            case "bmp":
-                return "image/bmp";
-            case "c":
-                return "text/plain";
-            case "class":
-                return "application/octet-stream";
-            case "conf":
-                return "text/plain";
-            case "cpp":
-                return "text/plain";
-            case "doc":
-                return "application/msword";
-            case "docx":
-                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-            case "xls":
-                return "application/vnd.ms-excel";
-            case "xlsx":
-                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            case "exe":
-                return "application/octet-stream";
-            case "gif":
-                return "image/gif";
-            case "gtar":
-                return "application/x-gtar";
-            case "gz":
-                return "application/x-gzip";
-            case "h":
-                return "text/plain";
-            case "htm":
-                return "text/html";
-            case "html":
-                return "text/html";
-            case "jar":
-                return "application/java-archive";
-            case "java":
-                return "text/plain";
-            case "jpeg":
-                return "image/jpeg";
-            case "jpg":
-                return "image/jpeg";
-            case "js":
-                return "application/x-javaScript";
-            case "log":
-                return "text/plain";
-            case "m3u":
-                return "audio/x-mpegurl";
-            case "m4a":
-                return "audio/mp4a-latm";
-            case "m4b":
-                return "audio/mp4a-latm";
-            case "m4p":
-                return "audio/mp4a-latm";
-            case "m4u":
-                return "video/vnd.mpegurl";
-            case "m4v":
-                return "video/x-m4v";
-            case "mov":
-                return "video/quicktime";
-            case "mp2":
-                return "audio/x-mpeg";
-            case "mp3":
-                return "audio/x-mpeg";
-            case "mp4":
-                return "video/mp4";
-            case "mpc":
-                return "application/vnd.mpohun.certificate";
-            case "mpe":
-                return "video/mpeg";
-            case "mpeg":
-                return "video/mpeg";
-            case "mpg":
-                return "video/mpeg";
-            case "mpg4":
-                return "video/mp4";
-            case "mpga":
-                return "audio/mpeg";
-            case "msg":
-                return "application/vnd.ms-outlook";
-            case "ogg":
-                return "audio/ogg";
-            case "pdf":
-                return "application/pdf";
-            case "png":
-                return "image/png";
-            case "pps":
-                return "application/vnd.ms-powerpoint";
-            case "ppt":
-                return "application/vnd.ms-powerpoint";
-            case "pptx":
-                return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-            case "prop":
-                return "text/plain";
-            case "rc":
-                return "text/plain";
-            case "rmvb":
-                return "audio/x-pn-realaudio";
-            case "rtf":
-                return "application/rtf";
-            case "sh":
-                return "text/plain";
-            case "tar":
-                return "application/x-tar";
-            case "tgz":
-                return "application/x-compressed";
-            case "txt":
-                return "text/plain";
-            case "wav":
-                return "audio/x-wav";
-            case "wma":
-                return "audio/x-ms-wma";
-            case "wmv":
-                return "audio/x-ms-wmv";
-            case "wps":
-                return "application/vnd.ms-works";
-            case "xml":
-                return "text/plain";
-            case "z":
-                return "application/x-compress";
-            case "zip":
-                return "application/x-zip-compressed";
-            default:
-                return "*/*";
+        String fileName = filePath.substring(filePath.lastIndexOf("."));
+        String extension = MimeTypeMap.getFileExtensionFromUrl(fileName).toLowerCase();
+        if (!extension.isEmpty()) {
+            MimeTypeMap mime = MimeTypeMap.getSingleton();
+            return mime.getMimeTypeFromExtension(extension.toLowerCase());
         }
+        return "*/*";
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -300,7 +191,7 @@ public class OpenFilePlugin implements MethodCallHandler
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             return activity.getPackageManager().canRequestPackageInstalls();
         }
-        return hasPermission(Manifest.permission.REQUEST_INSTALL_PACKAGES);
+        return false;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -324,7 +215,7 @@ public class OpenFilePlugin implements MethodCallHandler
         }
         for (int i = 0; i < strings.length; i++) {
             if (!hasPermission(strings[i])) {
-                result("Permission denied: " + strings[i]);
+                result(-3, "Permission denied: " + strings[i]);
                 return false;
             }
         }
@@ -338,18 +229,62 @@ public class OpenFilePlugin implements MethodCallHandler
         if (requestCode == RESULT_CODE) {
             if (canInstallApk()) {
                 startActivity();
-                result("done");
+                result(0, "done");
             } else {
-                result("Permission denied: " + Manifest.permission.REQUEST_INSTALL_PACKAGES);
+                result(-3, "Permission denied: " + Manifest.permission.REQUEST_INSTALL_PACKAGES);
             }
         }
         return false;
     }
 
-    private void result(String str) {
+    private void result(int type, String message) {
         if (result != null && !isResultSubmitted) {
-            result.success(str);
+            Map<String, Object> map = MapUtil.createMap(type, message);
+            result.success(JsonUtil.toJson(map));
             isResultSubmitted = true;
         }
+    }
+
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        this.flutterPluginBinding = binding;
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        this.flutterPluginBinding = null;
+    }
+
+    @Override
+    public void onAttachedToActivity(ActivityPluginBinding binding) {
+        channel =
+                new MethodChannel(
+                        flutterPluginBinding.getBinaryMessenger(), "open_file");
+        context = flutterPluginBinding.getApplicationContext();
+        activity = binding.getActivity();
+        channel.setMethodCallHandler(this);
+        binding.addRequestPermissionsResultListener(this);
+        binding.addActivityResultListener(this);
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        onDetachedFromActivity();
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
+        onAttachedToActivity(binding);
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+        if (channel == null) {
+            // Could be on too low of an SDK to have started listening originally.
+            return;
+        }
+
+        channel.setMethodCallHandler(null);
+        channel = null;
     }
 }

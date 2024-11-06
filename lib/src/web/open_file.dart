@@ -5,7 +5,7 @@ import 'web.dart' as web;
 
 class OpenFile {
   static Future<OpenResult> open(String filePath,
-      {String type, String uti, String linuxDesktopName = "xdg"}) async {
+      {String? type, String? uti, String linuxDesktopName = "xdg"}) async {
     bool _b = await web.open("file://$filePath");
     return OpenResult(
         type: _b ? ResultType.done : ResultType.error,

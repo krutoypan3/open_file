@@ -12,8 +12,8 @@ class OpenFile {
   static const MethodChannel _channel = const MethodChannel('open_file');
 
   ///linuxDesktopName like 'xdg'/'gnome'
-  static Future<OpenResult> open(String filePath,
-      {String type, String uti, String linuxDesktopName = "xdg"}) async {
+  Future<OpenResult> open(String filePath,
+      {String? type, String? uti, String linuxDesktopName = "xdg"}) async {
     if (!Platform.isIOS && !Platform.isAndroid) {
       int _result;
       if (Platform.isMacOS) {
@@ -21,7 +21,7 @@ class OpenFile {
       } else if (Platform.isLinux) {
         _result = linux.system('$linuxDesktopName-open $filePath');
       } else {
-        _result = windows.shellExecute('open', filePath);
+        _result = windows.ShellExecute('open', filePath);
       }
       return OpenResult(
           type: _result == 0 ? ResultType.done : ResultType.error,
@@ -30,9 +30,9 @@ class OpenFile {
               : "there are some errors when open $filePath");
     }
 
-    Map<String, String> map = {"file_path": filePath, "type": type, "uti": uti};
+    Map<String, String?> map = {"file_path": filePath, "type": type, "uti": uti};
     final _result = await _channel.invokeMethod('open_file', map);
     Map resultMap = json.decode(_result);
-    return OpenResult.fromJson(resultMap);
+    return OpenResult.fromJson(resultMap as Map<String, dynamic>);
   }
 }

@@ -1,6 +1,6 @@
 class OpenResult {
   ResultType type;
-  String message;
+  String? message;
 
   OpenResult({this.type = ResultType.done, this.message = "done"});
 
@@ -8,8 +8,8 @@ class OpenResult {
       : message = json['message'],
         type = _convertJson(json['type']);
 
-  static ResultType _convertJson(int jsonType) {
-    switch (jsonType) {
+  static ResultType _convertJson(int? jsonType){
+    switch(jsonType){
       case -1:
         return ResultType.noAppToOpen;
       case -2:

@@ -1,16 +1,18 @@
 name: open_file
 description: A plug-in that can call native APP to open files with string result in flutter,support iOS(UTI) and android(intent)
-version: 2.0.2
-author: crazecoder <21527312@qq.com>
+version: 0.0.8
+author: crazecoder <21527312@qq.com> + creatio mobile team
 homepage: https://github.com/crazecoder/open_file
 
 
 dependencies:
   flutter:
     sdk: flutter
+  ffi: ^1.0.0
 
 environment:
-    sdk: ">=2.0.0-dev.28.0 <3.0.0"
+    sdk: '>=2.12.0 <3.0.0'
+
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
 
