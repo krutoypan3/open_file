@@ -12,6 +12,7 @@ import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.io.IOException;
+import android.util.Log;
 
 public class FileUtil {
     public static String getFileMimeType(String filePath) {
