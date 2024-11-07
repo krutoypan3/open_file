@@ -15,6 +15,8 @@ import java.io.IOException;
 
 public class FileUtil {
     public static String getFileMimeType(String filePath) {
+        Log.d("OpenFilePlugin", "getFileMimeType: filePath: " + filePath);
+
         String[] fileStrs = filePath.split("\\.");
         String fileTypeStr = fileStrs[fileStrs.length - 1].toLowerCase();
         switch (fileTypeStr) {
@@ -177,6 +179,8 @@ public class FileUtil {
 
     @RequiresApi(api = Build.VERSION_CODES.S)
     public static boolean isExternalStoragePublicPath(String filePath) {
+        Log.d("OpenFilePlugin", "isExternalStoragePublicPath: filePath: " + filePath);
+
         boolean isExternalStoragePublicPath = false;
         String[] mediaStorePath = {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getPath()
@@ -203,11 +207,15 @@ public class FileUtil {
     }
 
     public static boolean isNeedPermission(String filePath) {
+        Log.d("OpenFilePlugin", "isNeedPermission: filePath: " + filePath);
+
         File file = new File(filePath);
         return !file.canRead();
     }
 
     public static String getCanonicalPath(String filePath) {
+        Log.d("OpenFilePlugin", "getCanonicalPath: filePath: " + filePath);
+
         if (filePath == null) {
             return null;
         }
@@ -218,10 +226,14 @@ public class FileUtil {
         } catch (IOException e) {
             canonicalPath = file.getPath();
         }
+        Log.d("OpenFilePlugin", "getCanonicalPath: canonicalPath: " + canonicalPath);
+
         return canonicalPath;
     }
 
     public static Uri getFileUri(Context context, String filePath) {
+        Log.d("OpenFilePlugin", "getFileUri: filePath: " + filePath);
+
         Uri uri;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             if (isOtherAndroidDataDir(context, filePath)) {
@@ -232,6 +244,8 @@ public class FileUtil {
         } else {
             uri = Uri.fromFile(new File(filePath));
         }
+        Log.d("OpenFilePlugin", "getFileUri: uri: " + uri);
+
         return uri;
     }
 
@@ -243,6 +257,8 @@ public class FileUtil {
      */
     @Deprecated
     private static boolean hasUriPermission(Context context, String filePath) {
+        Log.d("OpenFilePlugin", "hasUriPermission: filePath: " + filePath);
+
         Uri uri = getFileUri(context, filePath);
         int modeFlags = context.checkUriPermission(uri, android.os.Process.myPid(), android.os.Process.myUid(),
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -258,6 +274,8 @@ public class FileUtil {
      */
     @Deprecated
     private static boolean pathRequiresPermission(Context context, String filePath) {
+        Log.d("OpenFilePlugin", "pathRequiresPermission: filePath: " + filePath);
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return false;
         }
@@ -282,6 +300,8 @@ public class FileUtil {
     }
 
     private static String changeToPathUri(String path) {
+        Log.d("OpenFilePlugin", "changeToPathUri: filePath: " + path);
+
         return "content://com.android.externalstorage.documents/document/primary%3AAndroid%2Fdata%2F" + getAuthority(path, true, true);
     }
 

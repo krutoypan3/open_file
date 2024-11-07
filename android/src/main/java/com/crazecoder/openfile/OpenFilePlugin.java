@@ -87,6 +87,9 @@ public class OpenFilePlugin implements MethodCallHandler
         isResultSubmitted = false;
         if (call.method.equals("open_file")) {
             filePath = call.argument("file_path");
+
+            Log.d("OpenFilePlugin", "file_path: " + filePath);
+
             this.result = result;
 
             if (call.hasArgument("type") && call.argument("type") != null) {
@@ -115,6 +118,9 @@ public class OpenFilePlugin implements MethodCallHandler
     }
 
     private boolean pathRequiresPermission() {
+        Log.d("OpenFilePlugin", "pathRequiresPermission: filePath: " + filePath);
+
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return false;
         }
@@ -131,6 +137,7 @@ public class OpenFilePlugin implements MethodCallHandler
     }
 
     private void startActivity() {
+        Log.d("OpenFilePlugin", "startActivity: filePath: " + filePath);
         File file = new File(filePath);
         if (!file.exists()) {
             result(-2, "the " + filePath + " file is not exists");
@@ -163,6 +170,8 @@ public class OpenFilePlugin implements MethodCallHandler
     }
 
     private String getFileType(String filePath) {
+        Log.d("OpenFilePlugin", "getFileType: filePath: " + filePath);
+
         String fileName = filePath.substring(filePath.lastIndexOf("."));
         String extension = MimeTypeMap.getFileExtensionFromUrl(fileName).toLowerCase();
         if (!extension.isEmpty()) {
